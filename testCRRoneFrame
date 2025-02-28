@@ -1,0 +1,107 @@
+from astropy.io import fits
+import matplotlib.pyplot as plt
+import os
+import matplotlib as mpl
+import numpy as np
+import pandas as pd
+import lmfit
+from importlib import reload
+from scipy.ndimage import gaussian_filter
+import GrantCRR
+reload(GrantCRR)
+from GrantCRR import findContours, getEventEnergies
+mpl.use('QtAgg')
+plt.ion()
+makePlots=True
+def open_fits(file_loc):
+    hdu_list = fits.open(file_loc)
+    return hdu_list[0].data
+
+def combine_fits(file_loc_list):
+    combined_fits = open_fits(file_loc_list[0]) #first file
+    for file_loc in file_loc_list[1:]:
+        combined_fits = np.concatenate((combined_fits, open_fits(file_loc)), axis=0)
+    return combined_fits
+
+def combine_fits_after_opened(data_list):
+    #stacks exposures to be analyzed together in HunterCrr(). Assumes each frame has equal exposure time.
+    allFrames = data_list[0]
+    for frame in data_list[1:]:
+        allFrames = np.concatenate((allFrames, frame), axis=0)
+    return allFrames
+
+windowWidth = 7 #must be odd
+##### R019
+data = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R019_8000eV_35mA_ArInject_01.fits")
+#R019 = HunterCrr(data_R019)
+
+
+
+# Try and remove the worst of cosmic rays, could be improved using Grant's contour finding. replace points >1500 with the median
+data[data > 4600] = np.median(data[data < 975]) #2/25/2025: ~900 background and up to ~3300 ADU photons in strongest pixel
+data[:,:,1312:1490]=np.median(data[data < 975]) ### remove the bright column
+data[:,0:160,:]=np.median(data[data < 975]) ### remove bright row along the edge of the sensor
+dataPreCRR=np.copy(data)
+#Grant CRR, acts on individual frames
+i=0
+frame = data[i]
+med = np.median(frame[frame<975]) #median
+stderr = np.std(frame[frame<975]) #stdev of the noise
+frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False)
+COM_pixels_all, pts_all, energies_all, energy_bins_all, sizes_all, frame_CRR = getEventEnergies(frame, events_rot, CRR=True, plot=makePlots, median=np.median(data[data < 975]))
+#data[i]=frame_CRR
+
+# # Plot to show how mean includes signal while median (mostly) doesn't
+# f, axs = plt.subplots(1, 2, sharex=True, sharey=True)
+# plt.sca(axs[0])
+# plt.imshow(np.mean(data, axis=0).T, vmin=850, vmax=1100, label = 'mean')
+# plt.title('mean')
+# plt.sca(axs[1])
+# plt.imshow(np.median(data, axis=0).T, vmin=850, vmax=1100, label ='median')
+# plt.title('median')
+# meads =np.median(data, axis=0)
+combined = np.mean(data, axis=0) - np.median(data, axis=0)
+
+# print(combined.shape)
+# # New histogram that shows noise gaussian close to 0
+# f, ax = plt.subplots()
+# plt.hist(combined.ravel(), bins=1024, label = 'mean-median hist')
+# plt.title('mean- median')
+# plt.yscale('log')
+
+# f, ax = plt.subplots()
+# plt.imshow(combined.T, vmin=0, vmax=10, aspect='auto', cmap='inferno', label = 'transposed')
+# plt.colorbar()
+# plt.title('transposed')
+# # Remove background to help denoise image
+bkg_removed = combined.copy()
+bkg_removed[bkg_removed < -100] = 0
+# f, ax = plt.subplots()
+# plt.imshow(bkg_removed.T, vmin=0, vmax=10, aspect='auto', cmap='inferno', label = 'bkg removed')
+# plt.colorbar()
+# plt.title('bkg removed')
+
+# Shift rows to align image
+tilted = np.zeros((2200, 2048))
+L, W = bkg_removed.shape
+
+tilt_dir = 'CW' # CW or CCW
+tilt_amt = 23.0 # positive float
+for i, col in enumerate(bkg_removed.T):
+    offset = int((i * tilt_amt) // W)
+    if tilt_dir == 'CW':
+        tilted[-(offset+L+1):-(offset+1), i] = col
+    else:
+        tilted[offset:offset+L, i] = col
+
+# Final plot and spectra
+# f, (ax1, ax2) = plt.subplots(2,1)
+# ax1.imshow(tilted.T, vmin=0, vmax=10, aspect='auto', label = 'tilt corrected')
+# plt.legend()
+# plt.title('tilt corrected')
+# #f, ax = plt.subplots()
+# ax2.plot(np.sum(tilted, axis=1), label = 'collapsed')
+# plt.title('collapsed')
+# plt.show()
+# plt.tight_layout()
+

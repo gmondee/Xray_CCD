@@ -6,10 +6,11 @@ import numpy as np
 import pandas as pd
 import lmfit
 from scipy.ndimage import gaussian_filter
-
+from GrantCRR import findContours, getEventEnergies
 
 mpl.use('QtAgg')
 plt.ion()
+makePlots=True
 def open_fits(file_loc):
     hdu_list = fits.open(file_loc)
     return hdu_list[0].data
@@ -42,6 +43,17 @@ def HunterCrr(data):
 
     # Try and remove the worst of cosmic rays, could be improved using Grant's contour finding. replace points >1500 with the median
     data[data > 4600] = np.median(data[data < 975]) #2/25/2025: ~900 background and up to ~3300 ADU photons in strongest pixel
+    data[:,:,1312:1490]=np.median(data[data < 975]) ### remove the bright column
+    data[:,0:160,:]=np.median(data[data < 975]) ### remove bright row along the edge of the sensor
+    dataPreCRR=np.copy(data)
+    #Grant CRR, acts on individual frames
+    for i, frame in enumerate(data):
+        med = np.median(frame[frame<975]) #median
+        stderr = np.std(frame[frame<975]) #stdev of the noise
+        frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False)
+        COM_pixels_all, pts_all, energies_all, energy_bins_all, sizes_all, frame_CRR = getEventEnergies(frame, events_rot, CRR=True, plot=makePlots, median=med)
+        data[i]=frame_CRR
+
 
     # # Plot to show how mean includes signal while median (mostly) doesn't
     # f, axs = plt.subplots(1, 2, sharex=True, sharey=True)
@@ -131,6 +143,7 @@ for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspa
     collapsedAvgR019.append(np.sum([R019[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgR019 = np.array(collapsedAvgR019)
 smoothR019 = gaussian_filter(R019, sigma=2)
+assert 1==0
 ##### R021
 data_R021 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R021_8000eV_35mA_ArInject_01.fits")
 R021 = HunterCrr(data_R021)
