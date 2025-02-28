@@ -51,10 +51,10 @@ def findContours(im, median=None, stderr=None, plot=True):
   #im=np.clip(im+(lowLevelDisc), 0, 100000) #undo the subtraction but subtract some noise level
   return im, events, lowLevelDisc, contours
 
-def getEventEnergies(im, events, median, CRR=True, plot=False):
-  MAX_CLUSTER_SIZE = 11 #in pixels
-  MAX_CLUSTER_ENERGY = 3000#2400 #in units of ADU after a background has already been subtracted. How should we set this?   
-  MAX_PIXEL_ENERGY = 2500#2000#.65*MAX_CLUSTER_ENERGY  #800
+def getEventEnergies(im, events, median, CRR=True, plot=False, MAX_CLUSTER_SIZE=8, MAX_CLUSTER_ENERGY = 1700, MAX_PIXEL_ENERGY = 1500):
+  #   MAX_CLUSTER_SIZE = 8 #in pixels
+  #   MAX_CLUSTER_ENERGY = 1700#2400 #in units of ADU after a background has already been subtracted. How should we set this?   
+  #   MAX_PIXEL_ENERGY = 1500#2000#.65*MAX_CLUSTER_ENERGY  #800
   ### Combine events into single pixels placed at the center-of-mass with the combined energy. We've already subtracted out the median background.
   # COM is defined as (m1*x1 + m2*x2 + ... mn*xn)/(m1 + m2 + ... + mn) where "m" is replaced with the ADU value
   COM_pixels = []

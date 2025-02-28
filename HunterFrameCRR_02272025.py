@@ -5,12 +5,16 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import lmfit
+from importlib import reload
+import GrantCRR
+reload(GrantCRR)
 from scipy.ndimage import gaussian_filter
 from GrantCRR import findContours, getEventEnergies
 
 mpl.use('QtAgg')
+mpl.rcParams["image.interpolation"] = "none"
 plt.ion()
-makePlots=True
+makePlots=False
 def open_fits(file_loc):
     hdu_list = fits.open(file_loc)
     return hdu_list[0].data
@@ -37,12 +41,13 @@ def HunterCrr(data):
     # #plt.legend()
     # # Image without any corrections
     # f, ax = plt.subplots()
-    # plt.imshow(data[0].T, cmap='jet', vmin = 900, vmax = 1100)
+    # plt.figure()
+    # plt.imshow(np.sum(data.T, axis=0), cmap='jet', vmin = 900, vmax = 1100)
     # plt.colorbar()
     # plt.title('raw no corrections, 120s')
 
     # Try and remove the worst of cosmic rays, could be improved using Grant's contour finding. replace points >1500 with the median
-    data[data > 4600] = np.median(data[data < 975]) #2/25/2025: ~900 background and up to ~3300 ADU photons in strongest pixel
+    data[data > 1700] = np.median(data[data < 975]) #2/25/2025: ~900 background and up to ~3300 ADU photons in strongest pixel
     data[:,:,1312:1490]=np.median(data[data < 975]) ### remove the bright column
     data[:,0:160,:]=np.median(data[data < 975]) ### remove bright row along the edge of the sensor
     dataPreCRR=np.copy(data)
@@ -90,7 +95,7 @@ def HunterCrr(data):
     L, W = bkg_removed.shape
 
     tilt_dir = 'CW' # CW or CCW
-    tilt_amt = 23.0 # positive float
+    tilt_amt = 17.0 # positive float
     for i, col in enumerate(bkg_removed.T):
         offset = int((i * tilt_amt) // W)
         if tilt_dir == 'CW':
@@ -99,15 +104,15 @@ def HunterCrr(data):
             tilted[offset:offset+L, i] = col
 
     # Final plot and spectra
-    # f, (ax1, ax2) = plt.subplots(2,1)
-    # ax1.imshow(tilted.T, vmin=0, vmax=10, aspect='auto', label = 'tilt corrected')
-    # plt.legend()
-    # plt.title('tilt corrected')
-    # #f, ax = plt.subplots()
-    # ax2.plot(np.sum(tilted, axis=1), label = 'collapsed')
-    # plt.title('collapsed')
-    # plt.show()
-    # plt.tight_layout()
+    f, (ax1, ax2) = plt.subplots(2,1)
+    ax1.imshow(tilted.T, vmin=0, vmax=10, aspect='auto', label = 'tilt corrected')
+    plt.legend()
+    plt.title('tilt corrected')
+    #f, ax = plt.subplots()
+    ax2.plot(np.sum(tilted, axis=1), label = 'collapsed')
+    plt.title('collapsed')
+    plt.show()
+    plt.tight_layout()
 
 
     #binned spectra
@@ -143,7 +148,7 @@ for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspa
     collapsedAvgR019.append(np.sum([R019[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgR019 = np.array(collapsedAvgR019)
 smoothR019 = gaussian_filter(R019, sigma=2)
-assert 1==0
+
 ##### R021
 data_R021 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R021_8000eV_35mA_ArInject_01.fits")
 R021 = HunterCrr(data_R021)
@@ -188,8 +193,41 @@ for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspa
 collapsedAvgR024 = np.array(collapsedAvgR024)
 smoothR024 = gaussian_filter(R024, sigma=2)
 
+##### R025
+data_R025 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R025_8000eV_35mA_ArInject_01.fits")
+R025 = HunterCrr(data_R025)
+L=len(R025)
+collapsedAvgR025 = list(np.zeros(int((windowWidth-1)/2)))
+
+for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
+    collapsedAvgR025.append(np.sum([R025[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR025 = np.array(collapsedAvgR025)
+smoothR025 = gaussian_filter(R025, sigma=2)
+
+# ##### R027 #only one good frame (first frame), and trip may have happened at the end of the first frame?
+# data_R027 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R027_8000eV_35mA_ArInject_All.fits")
+# R027 = HunterCrr(data_R027)
+# L=len(R027)
+# collapsedAvgR027 = list(np.zeros(int((windowWidth-1)/2)))
+
+# for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
+#     collapsedAvgR027.append(np.sum([R027[windowInd] for windowInd in window.astype(int)])/windowWidth)
+# collapsedAvgR027 = np.array(collapsedAvgR027)
+# smoothR027 = gaussian_filter(R027, sigma=2)
+
+##### R028
+data_R028 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R028_8000eV_35mA_ArInject_00.fits")
+R028 = HunterCrr(data_R028)
+L=len(R028)
+collapsedAvgR028 = list(np.zeros(int((windowWidth-1)/2)))
+
+for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
+    collapsedAvgR028.append(np.sum([R028[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR028 = np.array(collapsedAvgR028)
+smoothR028 = gaussian_filter(R028, sigma=2)
+
 ##### CRR analysis using all available data
-listOfData = [data_R023, data_R024]#[data_R019, data_R021, data_R022, data_R023, data_R024]
+listOfData = [data_R019, data_R021, data_R022, data_R023, data_R024, data_R025, data_R028]
 allFramesInOne = combine_fits_after_opened(listOfData)
 allCollapsed = HunterCrr(allFramesInOne)
 L=len(allCollapsed)
@@ -205,6 +243,8 @@ collapsedData = {"R019":{"data":R019,"avg":collapsedAvgR019,"smooth":smoothR019}
                  "R022":{"data":R022,"avg":collapsedAvgR022,"smooth":smoothR022},
                  "R023":{"data":R023,"avg":collapsedAvgR023,"smooth":smoothR023},
                  "R024":{"data":R024,"avg":collapsedAvgR024,"smooth":smoothR024},
+                 "R025":{"data":R025,"avg":collapsedAvgR025,"smooth":smoothR025},
+                 "R028":{"data":R028,"avg":collapsedAvgR028,"smooth":smoothR028},
                  "All" :{"data":allCollapsed,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
 ##### Plots
 
