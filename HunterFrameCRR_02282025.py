@@ -140,6 +140,7 @@ def HunterCrr(data):
 
 
 windowWidth = 7 #must be odd
+Sigma = 3
 
 ##### R030
 data_R030 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\15min\R030_8000eV_30mA_ArInjec.fits")
@@ -150,7 +151,7 @@ collapsedAvgR030 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entrie
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
     collapsedAvgR030.append(np.sum([R030[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgR030 = np.array(collapsedAvgR030)
-smoothR030 = gaussian_filter(R030, sigma=2)
+smoothR030 = gaussian_filter(R030, sigma=Sigma)
 
 ##### R031
 data_R031 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\15min\R031_8000eV_30mA_ArInjec.fits")
@@ -161,7 +162,7 @@ collapsedAvgR031 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entrie
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
     collapsedAvgR031.append(np.sum([R031[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgR031 = np.array(collapsedAvgR031)
-smoothR031 = gaussian_filter(R031, sigma=2)
+smoothR031 = gaussian_filter(R031, sigma=Sigma)
 
 ##### CRR analysis using all available data
 listOfData = [data_R030, data_R031]
@@ -172,7 +173,7 @@ collapsedAvgAll = list(np.zeros(int((windowWidth-1)/2)))
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
     collapsedAvgAll.append(np.sum([allCollapsed02282025[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgAll = np.array(collapsedAvgAll)
-allCollapsedSmooth = gaussian_filter(allCollapsed02282025, sigma=2)
+allCollapsedSmooth = gaussian_filter(allCollapsed02282025, sigma=Sigma)
 
 ##### Storing data for plots
 collapsedData = {"R030":{"data":R030,"avg":collapsedAvgR030,"smooth":smoothR030},
@@ -198,6 +199,24 @@ axes[-1].plot(np.sum([collapsedData[key]["smooth"] for key in collapsedData.keys
 axes[-1].legend()
 plt.tight_layout()
 
+plt.figure()
+ax = plt.gca()
+ax.plot(collapsedData["All"]["smooth"])
+plt.ylabel("Intensity per pixel row (Arbs)")
+plt.xlabel("Pixel row")
+plt.tight_layout()
+
+if False:
+    i=np.linspace(0,2199, num=2200)
+    import csv
+    rows = zip(i, collapsedData["All"]["smooth"])
+    with open("XrayCrystalSpectra.txt", "w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Energy", "Ti", "Va", "Fe"])
+        for row in rows:
+            writer.writerow(row)
+
+
 f, axes = plt.subplots(nrows=len(collapsedData.keys())+1, ncols=1, sharex=True, sharey=True)
 plt.suptitle("Collapsed")
 for i, Run in enumerate(collapsedData.keys()):
@@ -206,4 +225,3 @@ for i, Run in enumerate(collapsedData.keys()):
 axes[-1].plot(np.sum([collapsedData[key]["data"] for key in collapsedData.keys() if key != "All"], axis=0), label='Added after analysis')
 axes[-1].legend()
 plt.tight_layout()
-
