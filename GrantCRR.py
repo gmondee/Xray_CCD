@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-def findContours(im, median=None, stderr=None, plot=True):
+def findContours(im, median=None, stderr=None, plot=True, LLD_sigma=5):
   ### Make a binary image to find the contours. For the CCD camera, cosmic rays and x-rays both bleed into multiple pixels.
   if median==None:
     #Find a rough median value for the background
@@ -15,7 +15,7 @@ def findContours(im, median=None, stderr=None, plot=True):
   print(f'{median=}, {stderr=}')
   binary_image = np.ndarray(im.shape, np.uint8) #create a blank image with the same shape as our image
   binary_image[:,:]=1                 #set all values to 1
-  lowLevelDisc = max(5*stderr, 5)
+  lowLevelDisc = max(LLD_sigma*stderr, 5)
   print(f'{lowLevelDisc=}')
   binary_image[im<=(lowLevelDisc+median)]=0  #cut out background within a few sigma of the median
   #im=im-(lowLevelDisc)  #shift all counts down by the low level discriminator
