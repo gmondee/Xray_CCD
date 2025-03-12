@@ -55,7 +55,7 @@ def HunterCrr(data):
     for i, frame in enumerate(data):
         med = np.median(frame[frame<975]) #median
         stderr = np.std(frame[frame<975]) #stdev of the noise
-        frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False)
+        frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False, LLD_sigma=4)
         COM_pixels_all, pts_all, energies_all, energy_bins_all, sizes_all, frame_CRR = getEventEnergies(frame, events_rot, CRR=True, plot=makePlots, 
                                                                                                         median=med, MAX_CLUSTER_ENERGY=2500, MAX_CLUSTER_SIZE=11,
                                                                                                         MAX_PIXEL_ENERGY=2000)
@@ -142,43 +142,33 @@ def HunterCrr(data):
 windowWidth = 7 #must be odd
 Sigma = 3
 
-##### R032
-data_R032 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\R032_5000eV_30mA_ArInject.fits")
-R032 = HunterCrr(data_R032)
-L=len(R032)
-collapsedAvgR032 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
+##### R035
+data_R035 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R035_5000eV_35mA_ArInject_0.fits")
+R035 = HunterCrr(data_R035)
+L=len(R035)
+collapsedAvgR035 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
 
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgR032.append(np.sum([R032[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgR032 = np.array(collapsedAvgR032)
-smoothR032 = gaussian_filter(R032, sigma=Sigma)
+    collapsedAvgR035.append(np.sum([R035[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR035 = np.array(collapsedAvgR035)
+smoothR035 = gaussian_filter(R035, sigma=Sigma)
 
-##### R033
-data_R033 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\R033_5000eV_30mA_ArInject_01.fits")
-R033 = HunterCrr(data_R033)
-L=len(R033)
-collapsedAvgR033 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
-
-for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgR033.append(np.sum([R033[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgR033 = np.array(collapsedAvgR033)
-smoothR033 = gaussian_filter(R033, sigma=Sigma)
-
+assert 1==0
 ##### CRR analysis using all available data
-listOfData = [data_R032, data_R033]
+listOfData = [data_R035]
 allFramesInOne = combine_fits_after_opened(listOfData)
-allCollapsed02282025 = HunterCrr(allFramesInOne)
-L=len(allCollapsed02282025)
+allCollapsed03102025 = HunterCrr(allFramesInOne)
+L=len(allCollapsed03102025)
 collapsedAvgAll = list(np.zeros(int((windowWidth-1)/2)))
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgAll.append(np.sum([allCollapsed02282025[windowInd] for windowInd in window.astype(int)])/windowWidth)
+    collapsedAvgAll.append(np.sum([allCollapsed03102025[windowInd] for windowInd in window.astype(int)])/windowWidth)
 collapsedAvgAll = np.array(collapsedAvgAll)
-allCollapsedSmooth = gaussian_filter(allCollapsed02282025, sigma=Sigma)
+allCollapsedSmooth = gaussian_filter(allCollapsed03102025, sigma=Sigma)
 
 ##### Storing data for plots
-collapsedData = {"R032":{"data":R032,"avg":collapsedAvgR032,"smooth":smoothR032},
-                 "R033":{"data":R033,"avg":collapsedAvgR033,"smooth":smoothR033},
-                 "All" :{"data":allCollapsed02282025,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
+collapsedData = {"R035":{"data":R035,"avg":collapsedAvgR035,"smooth":smoothR035},
+                 "All":{"data":R035,"avg":collapsedAvgR035,"smooth":smoothR035}}
+                 #"All" :{"data":allCollapsed03102025,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
 ##### Plots
 
 plt.figure()
@@ -204,13 +194,14 @@ ax = plt.gca()
 ax.plot(collapsedData["All"]["smooth"])
 plt.ylabel("Intensity per pixel row (Arbs)")
 plt.xlabel("Pixel row")
+plt.title("All data, smoothed")
 plt.tight_layout()
 
 if False:
     i=np.linspace(0,2199, num=2200)
     import csv
     rows = zip(i, collapsedData["All"]["smooth"])
-    with open("02282025_R032_R033.txt", "w", newline='') as f:
+    with open("03102025_R035.txt", "w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["Pixel", "Intensity"])
         for row in rows:

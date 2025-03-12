@@ -33,7 +33,7 @@ def combine_fits_after_opened(data_list):
     return allFrames
 
 
-def HunterCrr(data):
+def HunterCrr(data, do_Grant_CRR=True):
     # Plot histogram of intensity values
     # f, ax = plt.subplots()
     # #plt.hist(data.ravel(), bins=1000, label ='hist of data')
@@ -52,14 +52,15 @@ def HunterCrr(data):
     data[:,0:160,:]=np.median(data[data < 975]) ### remove bright row along the edge of the sensor
     dataPreCRR=np.copy(data)
     #Grant CRR, acts on individual frames
-    for i, frame in enumerate(data):
-        med = np.median(frame[frame<975]) #median
-        stderr = np.std(frame[frame<975]) #stdev of the noise
-        frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False, LLD_sigma=4)
-        COM_pixels_all, pts_all, energies_all, energy_bins_all, sizes_all, frame_CRR = getEventEnergies(frame, events_rot, CRR=True, plot=makePlots, 
-                                                                                                        median=med, MAX_CLUSTER_ENERGY=2500, MAX_CLUSTER_SIZE=11,
-                                                                                                        MAX_PIXEL_ENERGY=2000)
-        data[i]=frame_CRR
+    if do_Grant_CRR:
+        for i, frame in enumerate(data):
+            med = np.median(frame[frame<975]) #median
+            stderr = np.std(frame[frame<975]) #stdev of the noise
+            frame_out, events_rot, lowLevelDisc, contours = findContours(frame, median = med, stderr = stderr, plot=False, LLD_sigma=5)
+            COM_pixels_all, pts_all, energies_all, energy_bins_all, sizes_all, frame_CRR = getEventEnergies(frame, events_rot, CRR=True, plot=makePlots, 
+                                                                                                            median=med, MAX_CLUSTER_ENERGY=2500, MAX_CLUSTER_SIZE=11,
+                                                                                                            MAX_PIXEL_ENERGY=2000)
+            data[i]=frame_CRR
 
 
     # # Plot to show how mean includes signal while median (mostly) doesn't
@@ -71,7 +72,10 @@ def HunterCrr(data):
     # plt.imshow(np.median(data, axis=0).T, vmin=850, vmax=1100, label ='median')
     # plt.title('median')
     # meads =np.median(data, axis=0)
-    combined = np.mean(data, axis=0) - np.median(data, axis=0)
+    if len(data)>2:
+        combined = np.mean(data, axis=0) - np.median(data, axis=0)
+    else:
+        combined = np.mean(data, axis=0) - np.median(data)
 
     # print(combined.shape)
     # # New histogram that shows noise gaussian close to 0
@@ -142,33 +146,33 @@ def HunterCrr(data):
 windowWidth = 7 #must be odd
 Sigma = 3
 
-##### R034
-data_R034 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R034_8000eV_35mA_ArInject_00.fits")
-R034 = HunterCrr(data_R034)
-L=len(R034)
-collapsedAvgR034 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
+##### R041
+data_R041 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\R041_5000eV_30mA_ArInjec_900s_0p636sinxt.fits")
+R041 = HunterCrr(data_R041, do_Grant_CRR=True)
+L=len(R041)
+collapsedAvgR041 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
 
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgR034.append(np.sum([R034[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgR034 = np.array(collapsedAvgR034)
-smoothR034 = gaussian_filter(R034, sigma=Sigma)
+    collapsedAvgR041.append(np.sum([R041[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR041 = np.array(collapsedAvgR041)
+smoothR041 = gaussian_filter(R041, sigma=Sigma)
 
-assert 1==0
+
 ##### CRR analysis using all available data
-listOfData = [data_R034]
-allFramesInOne = combine_fits_after_opened(listOfData)
-allCollapsed03102025 = HunterCrr(allFramesInOne)
-L=len(allCollapsed03102025)
-collapsedAvgAll = list(np.zeros(int((windowWidth-1)/2)))
-for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgAll.append(np.sum([allCollapsed03102025[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgAll = np.array(collapsedAvgAll)
-allCollapsedSmooth = gaussian_filter(allCollapsed03102025, sigma=Sigma)
+# listOfData = [data_R041]
+# allFramesInOne = combine_fits_after_opened(listOfData)
+# allCollapsed03112025 = HunterCrr(allFramesInOne)
+# L=len(allCollapsed03112025)
+# collapsedAvgAll = list(np.zeros(int((windowWidth-1)/2)))
+# for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
+#     collapsedAvgAll.append(np.sum([allCollapsed03112025[windowInd] for windowInd in window.astype(int)])/windowWidth)
+# collapsedAvgAll = np.array(collapsedAvgAll)
+# allCollapsedSmooth = gaussian_filter(allCollapsed03112025, sigma=Sigma)
 
 ##### Storing data for plots
-collapsedData = {"R034":{"data":R034,"avg":collapsedAvgR034,"smooth":smoothR034},
-                 "All":{"data":R034,"avg":collapsedAvgR034,"smooth":smoothR034}}
-                 #"All" :{"data":allCollapsed03102025,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
+collapsedData = {"R041":{"data":R041,"avg":collapsedAvgR041,"smooth":smoothR041},
+                 "All":{"data":R041,"avg":collapsedAvgR041,"smooth":smoothR041}}
+                 #"All" :{"data":allCollapsed03112025,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
 ##### Plots
 
 plt.figure()
@@ -201,9 +205,9 @@ if False:
     i=np.linspace(0,2199, num=2200)
     import csv
     rows = zip(i, collapsedData["All"]["smooth"])
-    with open("XrayCrystalSpectra.txt", "w", newline='') as f:
+    with open("03112025_R041.txt", "w", newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["Energy", "Ti", "Va", "Fe"])
+        writer.writerow(["Pixel", "Intensity"])
         for row in rows:
             writer.writerow(row)
 

@@ -142,30 +142,30 @@ def HunterCrr(data):
 windowWidth = 7 #must be odd
 Sigma = 3
 
-##### R032
-data_R032 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\R032_5000eV_30mA_ArInject.fits")
-R032 = HunterCrr(data_R032)
-L=len(R032)
-collapsedAvgR032 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
+##### R030
+data_R030 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\15min\R030_8000eV_30mA_ArInjec.fits")
+R030 = HunterCrr(data_R030)
+L=len(R030)
+collapsedAvgR030 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
 
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgR032.append(np.sum([R032[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgR032 = np.array(collapsedAvgR032)
-smoothR032 = gaussian_filter(R032, sigma=Sigma)
+    collapsedAvgR030.append(np.sum([R030[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR030 = np.array(collapsedAvgR030)
+smoothR030 = gaussian_filter(R030, sigma=Sigma)
 
-##### R033
-data_R033 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\R033_5000eV_30mA_ArInject_01.fits")
-R033 = HunterCrr(data_R033)
-L=len(R033)
-collapsedAvgR033 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
+##### R031
+data_R031 = open_fits(r"C:\Users\Grant Mondeel\Box\CfA\Xray Crystal\Data\02282025\15min\R031_8000eV_30mA_ArInjec.fits")
+R031 = HunterCrr(data_R031)
+L=len(R031)
+collapsedAvgR031 = list(np.zeros(int((windowWidth-1)/2))) #make two empty entries to 
 
 for window in [np.linspace(a,a+windowWidth-1,num=windowWidth) for a in np.linspace(0,L-windowWidth,num=L-windowWidth+1)]:
-    collapsedAvgR033.append(np.sum([R033[windowInd] for windowInd in window.astype(int)])/windowWidth)
-collapsedAvgR033 = np.array(collapsedAvgR033)
-smoothR033 = gaussian_filter(R033, sigma=Sigma)
+    collapsedAvgR031.append(np.sum([R031[windowInd] for windowInd in window.astype(int)])/windowWidth)
+collapsedAvgR031 = np.array(collapsedAvgR031)
+smoothR031 = gaussian_filter(R031, sigma=Sigma)
 
 ##### CRR analysis using all available data
-listOfData = [data_R032, data_R033]
+listOfData = [data_R030, data_R031]
 allFramesInOne = combine_fits_after_opened(listOfData)
 allCollapsed02282025 = HunterCrr(allFramesInOne)
 L=len(allCollapsed02282025)
@@ -176,8 +176,8 @@ collapsedAvgAll = np.array(collapsedAvgAll)
 allCollapsedSmooth = gaussian_filter(allCollapsed02282025, sigma=Sigma)
 
 ##### Storing data for plots
-collapsedData = {"R032":{"data":R032,"avg":collapsedAvgR032,"smooth":smoothR032},
-                 "R033":{"data":R033,"avg":collapsedAvgR033,"smooth":smoothR033},
+collapsedData = {"R030":{"data":R030,"avg":collapsedAvgR030,"smooth":smoothR030},
+                 "R031":{"data":R031,"avg":collapsedAvgR031,"smooth":smoothR031},
                  "All" :{"data":allCollapsed02282025,"avg":collapsedAvgAll,"smooth":allCollapsedSmooth}}
 ##### Plots
 
@@ -210,7 +210,7 @@ if False:
     i=np.linspace(0,2199, num=2200)
     import csv
     rows = zip(i, collapsedData["All"]["smooth"])
-    with open("02282025_R032_R033.txt", "w", newline='') as f:
+    with open("02282025_R030_R031_15min.txt", "w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["Pixel", "Intensity"])
         for row in rows:
